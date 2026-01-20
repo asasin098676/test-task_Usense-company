@@ -1,42 +1,248 @@
-#root {
-  max-width: 1280px;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Ubuntu,
+    Cantarell,
+    Noto Sans,
+    Helvetica,
+    Arial,
+    "Apple Color Emoji",
+    "Segoe UI Emoji";
+  color: #0b0f17;
+}
+
+.background {
+  background-image: url("./assets/img/bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+}
+
+.container {
+  padding: 30px;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 2rem;
+}
+
+.title {
+  margin: 0 0 14px 0;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  line-height: 1.15;
   text-align: center;
+
+  color: rgba(18, 18, 10, 0.92);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.12);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.loading,
+.error,
+.empty {
+  margin-top: 12px;
+  font-size: 14px;
+  opacity: 0.85;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.error {
+  color: #b00020;
+}
+
+.searchbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.searchbar__input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  font-size: 16px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.searchbar__input:focus {
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
+.searchbar__button {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.searchbar__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gif-grid {
+  margin-top: 16px;
+  column-count: 5;
+  column-gap: 12px;
+}
+
+@media (max-width: 1100px) {
+  .gif-grid {
+    column-count: 4;
   }
-  to {
-    transform: rotate(360deg);
+}
+@media (max-width: 900px) {
+  .gif-grid {
+    column-count: 3;
+  }
+}
+@media (max-width: 650px) {
+  .gif-grid {
+    column-count: 2;
+  }
+}
+@media (max-width: 420px) {
+  .gif-grid {
+    column-count: 1;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+.gif-card {
+  break-inside: avoid;
+  margin: 0 0 12px 0;
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gif-media {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.gif-media img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.gif-author {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.85;
+  padding-left: 2px;
+}
+
+.gif-details {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+
+  padding: 20px;
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 700px) {
+  .gif-details {
+    grid-template-columns: 1fr;
   }
 }
 
-.card {
-  padding: 2em;
+.gif-details__preview {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.12);
 }
 
-.read-the-docs {
-  color: #888;
+.gif-details__preview img {
+  width: 100%;
+  display: block;
+}
+
+.gif-details__info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.gif-details__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.gif-details__row {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.gif-details__row span {
+  opacity: 0.7;
+}
+
+.gif-details__actions {
+  margin-top: auto;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gif-btn {
+  padding: 10px 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: #0b0f17;
+
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease;
+}
+
+.gif-btn:hover {
+  background: rgba(245, 245, 245, 0.95);
+  transform: translateY(-1px);
 }
