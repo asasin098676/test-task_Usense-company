@@ -1,3 +1,4 @@
+import React from "react";
 import type { GiphyGif } from "../types/giphy";
 
 type Props = {
@@ -5,7 +6,7 @@ type Props = {
   onSelect: (gif: GiphyGif) => void;
 };
 
-export const GifGrid = ({ gifs, onSelect }: Props) => {
+export const GifGrid = React.memo(function GifGrid({ gifs, onSelect }: Props) {
   return (
     <div className="gif-grid">
       {gifs.map((gif) => (
@@ -26,4 +27,4 @@ export const GifGrid = ({ gifs, onSelect }: Props) => {
       ))}
     </div>
   );
-};
+});

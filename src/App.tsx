@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SearchBar } from "./components/SearchBar";
 import { GifGrid } from "./components/GifGrid";
 import { useGiphySearch } from "./api/useGiphySearch";
@@ -12,24 +12,43 @@ export default function App() {
 
   const { data, isLoading, error, refetch, isFetching } = useGiphySearch(query);
 
-  const gifs = useMemo(() => data?.data ?? [], [data]);
+  const gifs = useMemo(() => data?.data ?? [], [data?.data]);
 
   const detailsRef = useRef<HTMLDivElement | null>(null);
 
   const [toast, setToast] = useState<string | null>(null);
   const [isDownloading, setDownloading] = useState(false);
 
-  const showToast = (msg: string) => {
+  const toastTimerRef = useRef<number | null>(null);
+
+  const showToast = useCallback((msg: string) => {
     setToast(msg);
-    window.setTimeout(() => setToast(null), 1500);
-  };
+
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 1500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleSelect = useCallback((gif: GiphyGif) => {
+    setSelected(gif);
+  }, []);
 
   useEffect(() => {
     if (selected && detailsRef.current) {
-      detailsRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "end",
-      });
+      detailsRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [selected]);
   return (
@@ -48,7 +67,7 @@ export default function App() {
         {isLoading && <div className="loading">Loading…</div>}
 
         {gifs.length > 0 ? (
-          <GifGrid gifs={gifs} onSelect={setSelected} />
+          <GifGrid gifs={gifs} onSelect={handleSelect} />
         ) : (
           !isFetching && <div className="empty">No results</div>
         )}
