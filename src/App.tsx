@@ -7,8 +7,10 @@ import "./App.css";
 import { copyToClipboard, downloadFile } from "./utils/gifActions";
 import { DEFAULT_SEARCH_QUERY, TOAST_DURATION_MS } from "./constants/app";
 import { UI_TEXT } from "./constants/ui";
+import { useDebouncedValue } from "./hooks/useDebouncedValue";
 
 const MIN_QUERY_LENGTH = 2;
+const DEBOUNCE_MS = 350;
 
 const isAbortError = (err: unknown): boolean =>
   err instanceof DOMException && err.name === "AbortError";
@@ -18,10 +20,11 @@ export default function App() {
   const [selected, setSelected] = useState<GiphyGif | null>(null);
 
   const normalizedQuery = useMemo(() => query.trim(), [query]);
-  const canSearch = normalizedQuery.length >= MIN_QUERY_LENGTH;
+  const debouncedQuery = useDebouncedValue(normalizedQuery, DEBOUNCE_MS);
 
-  const { data, isLoading, error, refetch, isFetching } =
-    useGiphySearch(normalizedQuery);
+  const canSearch = debouncedQuery.length >= MIN_QUERY_LENGTH;
+
+  const { data, isLoading, error, isFetching } = useGiphySearch(debouncedQuery);
 
   const gifs = useMemo(() => data?.data ?? [], [data?.data]);
 
@@ -57,11 +60,6 @@ export default function App() {
     setSelected(gif);
   }, []);
 
-  const handleSubmit = useCallback(() => {
-    if (!canSearch) return;
-    refetch();
-  }, [canSearch, refetch]);
-
   useEffect(() => {
     if (!canSearch) {
       setSelected(null);
@@ -70,12 +68,15 @@ export default function App() {
 
   useEffect(() => {
     if (selected && detailsRef.current) {
-      detailsRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      detailsRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
     }
   }, [selected]);
 
   const shouldShowError =
-    Boolean(error) && !isAbortError(error) && normalizedQuery.length > 0;
+    Boolean(error) && !isAbortError(error) && debouncedQuery.length > 0;
 
   return (
     <div className="background">
@@ -85,7 +86,7 @@ export default function App() {
         <SearchBar
           value={query}
           onChange={setQuery}
-          onSubmit={handleSubmit}
+          onSubmit={() => {}}
           isLoading={isFetching}
         />
 
@@ -95,8 +96,8 @@ export default function App() {
 
         {!canSearch ? (
           <div className="empty">
-            {normalizedQuery.length === 0
-              ? (UI_TEXT.HINT_EMPTY ?? "Type something to search")
+            {debouncedQuery.length === 0
+              ? UI_TEXT.HINT_EMPTY
               : (UI_TEXT.HINT_MIN_LEN ??
                 `Enter at least ${MIN_QUERY_LENGTH} characters`)}
           </div>
@@ -131,12 +132,12 @@ export default function App() {
                 </div>
 
                 <div className="gif-details__row">
-                  <span>{UI_TEXT.CREATED_LABEL} </span>
+                  <span>{UI_TEXT.CREATED_LABEL}</span>
                   <strong>{selected.import_datetime || UI_TEXT.UNKNOWN}</strong>
                 </div>
 
                 <div className="gif-details__actions">
-                  {selected.url ? (
+                  {selected.url && (
                     <a
                       href={selected.url}
                       target="_blank"
@@ -145,7 +146,7 @@ export default function App() {
                     >
                       {UI_TEXT.OPEN_ON_GIPHY}
                     </a>
-                  ) : null}
+                  )}
 
                   <button
                     type="button"
@@ -155,8 +156,7 @@ export default function App() {
                         const link = selected.images.original.url;
                         await copyToClipboard(link);
                         showToast(UI_TEXT.TOAST.COPIED);
-                      } catch (e) {
-                        console.error(e);
+                      } catch {
                         showToast(UI_TEXT.COPY_FAILED);
                       }
                     }}
@@ -182,17 +182,14 @@ export default function App() {
 
                         await downloadFile(directUrl, `${safeTitle}.gif`);
                         showToast(UI_TEXT.TOAST.DOWNLOADED);
-                      } catch (e) {
-                        console.error(e);
+                      } catch {
                         showToast(UI_TEXT.TOAST.DOWNLOAD_FAILED);
                       } finally {
                         setDownloading(false);
                       }
                     }}
                   >
-                    {isDownloading
-                      ? UI_TEXT.DOWNLOADING
-                      : UI_TEXT.TOAST.DOWNLOADED}
+                    {isDownloading ? UI_TEXT.DOWNLOADING : UI_TEXT.DOWNLOAD}
                   </button>
                 </div>
 

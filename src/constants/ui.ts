@@ -13,6 +13,7 @@ export const UI_TEXT = {
   UNTITLED: "Untitled GIF",
   HINT_EMPTY: "Failed to load GIFs",
   HINT_MIN_LEN: "Search term must be at least 3 characters",
+  DOWNLOAD: "Download",
 
   TOAST: {
     COPIED: "Link copied",
