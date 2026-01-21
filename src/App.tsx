@@ -5,14 +5,23 @@ import { useGiphySearch } from "./api/useGiphySearch";
 import type { GiphyGif } from "./types/giphy";
 import "./App.css";
 import { copyToClipboard, downloadFile } from "./utils/gifActions";
-import { DEFAULT_SEARCH_QUERY } from "./constants/app";
+import { DEFAULT_SEARCH_QUERY, TOAST_DURATION_MS } from "./constants/app";
 import { UI_TEXT } from "./constants/ui";
+
+const MIN_QUERY_LENGTH = 2;
+
+const isAbortError = (err: unknown): boolean =>
+  err instanceof DOMException && err.name === "AbortError";
 
 export default function App() {
   const [query, setQuery] = useState(DEFAULT_SEARCH_QUERY);
   const [selected, setSelected] = useState<GiphyGif | null>(null);
 
-  const { data, isLoading, error, refetch, isFetching } = useGiphySearch(query);
+  const normalizedQuery = useMemo(() => query.trim(), [query]);
+  const canSearch = normalizedQuery.length >= MIN_QUERY_LENGTH;
+
+  const { data, isLoading, error, refetch, isFetching } =
+    useGiphySearch(normalizedQuery);
 
   const gifs = useMemo(() => data?.data ?? [], [data?.data]);
 
@@ -33,7 +42,7 @@ export default function App() {
     toastTimerRef.current = window.setTimeout(() => {
       setToast(null);
       toastTimerRef.current = null;
-    }, 1500);
+    }, TOAST_DURATION_MS);
   }, []);
 
   useEffect(() => {
@@ -48,11 +57,26 @@ export default function App() {
     setSelected(gif);
   }, []);
 
+  const handleSubmit = useCallback(() => {
+    if (!canSearch) return;
+    refetch();
+  }, [canSearch, refetch]);
+
+  useEffect(() => {
+    if (!canSearch) {
+      setSelected(null);
+    }
+  }, [canSearch]);
+
   useEffect(() => {
     if (selected && detailsRef.current) {
       detailsRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [selected]);
+
+  const shouldShowError =
+    Boolean(error) && !isAbortError(error) && normalizedQuery.length > 0;
+
   return (
     <div className="background">
       <div className="container">
@@ -61,64 +85,83 @@ export default function App() {
         <SearchBar
           value={query}
           onChange={setQuery}
-          onSubmit={() => refetch()}
+          onSubmit={handleSubmit}
           isLoading={isFetching}
         />
 
-        {error && <div className="error">Failed to load GIFs</div>}
+        {shouldShowError && <div className="error">{UI_TEXT.ERROR}</div>}
+
         {isLoading && <div className="loading">{UI_TEXT.LOADING}</div>}
 
-        {gifs.length > 0 ? (
+        {!canSearch ? (
+          <div className="empty">
+            {normalizedQuery.length === 0
+              ? (UI_TEXT.HINT_EMPTY ?? "Type something to search")
+              : (UI_TEXT.HINT_MIN_LEN ??
+                `Enter at least ${MIN_QUERY_LENGTH} characters`)}
+          </div>
+        ) : gifs.length > 0 ? (
           <GifGrid gifs={gifs} onSelect={handleSelect} />
         ) : (
-          !isFetching && <div className="empty">No results</div>
+          !isFetching && <div className="empty">{UI_TEXT.EMPTY}</div>
         )}
+
         {selected && (
           <div ref={detailsRef}>
             <div className="gif-details">
               <div className="gif-details__preview">
-                <img src={selected.images.original.url} alt={selected.title} />
+                <img
+                  src={selected.images.original.url}
+                  alt={selected.title || "GIF"}
+                />
               </div>
 
               <div className="gif-details__info">
                 <h2 className="gif-details__title">
-                  {selected.title || "Untitled GIF"}
+                  {selected.title || UI_TEXT.UNTITLED}
                 </h2>
 
                 <div className="gif-details__row">
-                  <span>Author:</span>
+                  <span>{UI_TEXT.AUTHOR_LABEL}</span>
                   <strong>
                     {selected.user?.display_name ||
                       selected.username ||
-                      "Unknown"}
+                      UI_TEXT.UNKNOWN}
                   </strong>
                 </div>
 
                 <div className="gif-details__row">
-                  <span>Created:</span>
-                  <strong>{selected.import_datetime || "Unknown"}</strong>
+                  <span>{UI_TEXT.CREATED_LABEL} </span>
+                  <strong>{selected.import_datetime || UI_TEXT.UNKNOWN}</strong>
                 </div>
 
                 <div className="gif-details__actions">
-                  <a
-                    href={selected.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="gif-btn"
-                  >
-                    Open on Giphy
-                  </a>
+                  {selected.url ? (
+                    <a
+                      href={selected.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="gif-btn"
+                    >
+                      {UI_TEXT.OPEN_ON_GIPHY}
+                    </a>
+                  ) : null}
 
                   <button
                     type="button"
                     className="gif-btn"
                     onClick={async () => {
-                      const link = selected.images.original.url;
-                      await copyToClipboard(link);
-                      showToast(UI_TEXT.TOAST.COPIED);
+                      try {
+                        const link = selected.images.original.url;
+                        await copyToClipboard(link);
+                        showToast(UI_TEXT.TOAST.COPIED);
+                      } catch (e) {
+                        console.error(e);
+                        showToast(UI_TEXT.COPY_FAILED);
+                      }
                     }}
                   >
-                    Copy link
+                    {UI_TEXT.COPY_LINK}
                   </button>
 
                   <button
@@ -128,6 +171,7 @@ export default function App() {
                     onClick={async () => {
                       try {
                         setDownloading(true);
+
                         const directUrl = selected.images.original.url;
                         const safeTitle =
                           (selected.title || "giphy")
@@ -137,18 +181,21 @@ export default function App() {
                             .replace(/^-|-$/g, "") || "giphy";
 
                         await downloadFile(directUrl, `${safeTitle}.gif`);
-                        showToast("Downloaded");
+                        showToast(UI_TEXT.TOAST.DOWNLOADED);
                       } catch (e) {
                         console.error(e);
-                        showToast("Download failed");
+                        showToast(UI_TEXT.TOAST.DOWNLOAD_FAILED);
                       } finally {
                         setDownloading(false);
                       }
                     }}
                   >
-                    {isDownloading ? "Downloading…" : "Download"}
+                    {isDownloading
+                      ? UI_TEXT.DOWNLOADING
+                      : UI_TEXT.TOAST.DOWNLOADED}
                   </button>
                 </div>
+
                 {toast && <div className="toast">{toast}</div>}
               </div>
             </div>
