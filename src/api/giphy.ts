@@ -21,6 +21,10 @@ type SearchParams = {
   lang?: string;
 };
 
+type RequestOptions = {
+  signal?: AbortSignal;
+};
+
 const buildUrl = (
   path: string,
   params: Record<string, string | number | undefined>,
@@ -46,8 +50,12 @@ class ApiValidationError extends Error {
   }
 }
 
-const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
-  const response = await fetch(url);
+const fetchJson = async <T>(
+  url: string,
+  schema: z.ZodType<T>,
+  options?: RequestOptions,
+): Promise<T> => {
+  const response = await fetch(url, { signal: options?.signal });
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -72,7 +80,10 @@ const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
 };
 
 export const giphyApi = {
-  searchGifs(params: SearchParams): Promise<GiphySearchResponse> {
+  searchGifs(
+    params: SearchParams,
+    options?: RequestOptions,
+  ): Promise<GiphySearchResponse> {
     const url = buildUrl("/search", {
       q: params.q,
       limit: params.limit ?? 24,
@@ -81,11 +92,14 @@ export const giphyApi = {
       lang: params.lang ?? "en",
     });
 
-    return fetchJson(url, giphySearchResponseSchema);
+    return fetchJson(url, giphySearchResponseSchema, options);
   },
 
-  getGifById(id: string): Promise<GiphyGetByIdResponse> {
+  getGifById(
+    id: string,
+    options?: RequestOptions,
+  ): Promise<GiphyGetByIdResponse> {
     const url = buildUrl(`/${encodeURIComponent(id)}`, {});
-    return fetchJson(url, giphyGetByIdResponseSchema);
+    return fetchJson(url, giphyGetByIdResponseSchema, options);
   },
 };

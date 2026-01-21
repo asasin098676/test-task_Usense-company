@@ -1,13 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { giphyApi } from "./giphy";
 
-export const useGiphySearch = (q: string) => {
-  const query = q.trim();
+const MIN_QUERY_LENGTH = 2;
 
+export function useGiphySearch(query: string) {
   return useQuery({
-    queryKey: ["giphy", "search", query],
-    queryFn: () => giphyApi.searchGifs({ q: query, limit: 24 }),
-    enabled: query.length > 0,
-    staleTime: 60_000,
+    queryKey: ["gifs", query],
+    enabled: query.length >= MIN_QUERY_LENGTH,
+
+    queryFn: ({ signal }) => giphyApi.searchGifs({ q: query }, { signal }),
+
+    staleTime: 1000 * 60,
+    retry: (failureCount, error) => {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
-};
+}
