@@ -1,4 +1,10 @@
-import type { GiphySearchResponse } from "../types/giphy";
+import { z } from "zod";
+import {
+  giphySearchResponseSchema,
+  giphyGetByIdResponseSchema,
+  type GiphySearchResponse,
+  type GiphyGetByIdResponse,
+} from "../schemas/giphy.schema";
 
 const API_KEY = import.meta.env.VITE_GIPHY_API_KEY;
 const BASE_URL = "https://api.giphy.com/v1/gifs";
@@ -18,31 +24,55 @@ type SearchParams = {
 const buildUrl = (
   path: string,
   params: Record<string, string | number | undefined>,
-) => {
+): string => {
   const url = new URL(`${BASE_URL}${path}`);
   url.searchParams.set("api_key", API_KEY ?? "");
-  Object.entries(params).forEach(([k, v]) => {
-    if (v === undefined || v === null || v === "") return;
-    url.searchParams.set(k, String(v));
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    url.searchParams.set(key, String(value));
   });
+
   return url.toString();
 };
 
-const fetchJson = async <T>(url: string): Promise<T> => {
-  const res = await fetch(url);
-  console.log(res);
+class ApiValidationError extends Error {
+  details?: unknown;
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
+  constructor(message: string, details?: unknown) {
+    super(message);
+    this.name = "ApiValidationError";
+    this.details = details;
+  }
+}
+
+const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
     throw new Error(
-      `GIPHY request failed: ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`,
+      `GIPHY request failed: ${response.status} ${response.statusText}${
+        text ? ` — ${text}` : ""
+      }`,
     );
   }
-  return (await res.json()) as T;
+
+  const json: unknown = await response.json();
+
+  const parsed = schema.safeParse(json);
+  if (!parsed.success) {
+    throw new ApiValidationError(
+      "Invalid API response shape (GIPHY)",
+      parsed.error.format(),
+    );
+  }
+
+  return parsed.data;
 };
 
 export const giphyApi = {
-  searchGifs(params: SearchParams) {
+  searchGifs(params: SearchParams): Promise<GiphySearchResponse> {
     const url = buildUrl("/search", {
       q: params.q,
       limit: params.limit ?? 24,
@@ -50,11 +80,12 @@ export const giphyApi = {
       rating: params.rating,
       lang: params.lang ?? "en",
     });
-    return fetchJson<GiphySearchResponse>(url);
+
+    return fetchJson(url, giphySearchResponseSchema);
   },
 
-  getGifById(id: string) {
+  getGifById(id: string): Promise<GiphyGetByIdResponse> {
     const url = buildUrl(`/${encodeURIComponent(id)}`, {});
-    return fetchJson<{ data: any; meta: any }>(url);
+    return fetchJson(url, giphyGetByIdResponseSchema);
   },
 };
