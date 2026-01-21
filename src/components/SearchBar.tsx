@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./SearchBar.css";
 
 type Props = {
   value: string;
@@ -19,34 +20,20 @@ export const SearchBar = ({ value, onChange, onSubmit, isLoading }: Props) => {
 
   return (
     <form
+      className="search-bar"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
       }}
-      style={{ display: "flex", gap: 12, alignItems: "center" }}
     >
       <input
+        className="search-bar__input"
         value={local}
         onChange={(e) => setLocal(e.target.value)}
         placeholder="Search GIFs (e.g. cat, meme, rain)"
-        style={{
-          flex: 1,
-          padding: "12px 14px",
-          borderRadius: 10,
-          border: "1px solid rgba(0,0,0,0.2)",
-          fontSize: 16,
-        }}
       />
-      <button
-        type="submit"
-        disabled={isLoading}
-        style={{
-          padding: "12px 14px",
-          borderRadius: 10,
-          border: "1px solid rgba(0,0,0,0.2)",
-          cursor: isLoading ? "not-allowed" : "pointer",
-        }}
-      >
+
+      <button type="submit" disabled={isLoading} className="search-bar__button">
         {isLoading ? "Searching…" : "Search"}
       </button>
     </form>
