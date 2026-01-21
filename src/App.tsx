@@ -5,9 +5,11 @@ import { useGiphySearch } from "./api/useGiphySearch";
 import type { GiphyGif } from "./types/giphy";
 import "./App.css";
 import { copyToClipboard, downloadFile } from "./utils/gifActions";
+import { DEFAULT_SEARCH_QUERY } from "./constants/app";
+import { UI_TEXT } from "./constants/ui";
 
 export default function App() {
-  const [query, setQuery] = useState("cat");
+  const [query, setQuery] = useState(DEFAULT_SEARCH_QUERY);
   const [selected, setSelected] = useState<GiphyGif | null>(null);
 
   const { data, isLoading, error, refetch, isFetching } = useGiphySearch(query);
@@ -54,7 +56,7 @@ export default function App() {
   return (
     <div className="background">
       <div className="container">
-        <h1 className="title">GIF Search</h1>
+        <h1 className="title">{UI_TEXT.TITLE}</h1>
 
         <SearchBar
           value={query}
@@ -64,7 +66,7 @@ export default function App() {
         />
 
         {error && <div className="error">Failed to load GIFs</div>}
-        {isLoading && <div className="loading">Loading…</div>}
+        {isLoading && <div className="loading">{UI_TEXT.LOADING}</div>}
 
         {gifs.length > 0 ? (
           <GifGrid gifs={gifs} onSelect={handleSelect} />
@@ -113,7 +115,7 @@ export default function App() {
                     onClick={async () => {
                       const link = selected.images.original.url;
                       await copyToClipboard(link);
-                      showToast("Link copied");
+                      showToast(UI_TEXT.TOAST.COPIED);
                     }}
                   >
                     Copy link
